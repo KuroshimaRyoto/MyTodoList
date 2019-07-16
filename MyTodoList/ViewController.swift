@@ -33,6 +33,10 @@ class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegat
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        let userDefaults = UserDefaults.standard
+        if let storedTodoList = userDefaults.array(forKey: "todoList") as? [String]{
+            todoList.append(contentsOf: storedTodoList)
+        }
     }
     
     @IBAction func tapAddButton(_ sender: Any) {
@@ -49,6 +53,11 @@ class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegat
                 self.todoList.insert(textField.text!,at:0)
                 //テーブルに行を追加されたことをテーブルに通知
                 self.tableView.insertRows(at:[IndexPath(row:0,section:0)],with:UITableView.RowAnimation.right)
+                
+                //todoの保存処理
+                let userDefaults = UserDefaults.standard
+                userDefaults.set(self.todoList,forKey: "todoList")
+                userDefaults.synchronize()
             }
         }
         //OKボタンがタップされたときの処理
@@ -60,5 +69,7 @@ class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegat
         //アラートダイアログを表示
         present(alertController,animated: true,completion:nil)
     }
+    
+    
     
 }
