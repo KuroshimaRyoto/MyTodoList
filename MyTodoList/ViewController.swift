@@ -10,6 +10,25 @@ import UIKit
 
 class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegate {
     
+    @IBOutlet weak var tableView: UITableView!
+    //Todoを格納する配列
+    var todoList = [MyTodo]()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Do any additional setup after loading the view.
+        let userDefaults = UserDefaults.standard
+        if let storedTodoList = userDefaults.array(forKey: "todoList") as? Data{
+            do{
+                if let unarchiveTodoList = try NSKeyedUnarchiver.unarchiveObject(ofClasses:[NSArray.self, MyTodo.self],from:storedTodoList) as? [MyTodo]{
+                    todoList.append(contentsOf: storedTodoList)
+                }
+            }catch {
+                //エラー処理なし
+            }
+        }
+    }
+    
     //テーブルの行数を返却する
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return todoList.count
@@ -19,23 +38,42 @@ class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegat
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier:"todoCell",for:indexPath)
         //Storyboardで指定したtodoCell識別子を利用して再利用可能なセルを取得する
-        let todoTitle = todoList[indexPath.row]
+        //行番号に合ったTodoの情報を取得
+        let myTodo = todoList[indexPath.row]
         //セルのラベルにTodoのタイトルをセット
-        cell.textLabel?.text = todoTitle
+        cell.textLabel?.text = myTodo.todoTitle
+        //セルのチェックマーク状態をセット
+        if myTodo.todoDone{
+            //チェックあり
+            cell.accessoryType = UITableViewCell.AccessoryType.checkmark
+        }else{
+            //チェックなし
+            cell.accessoryType = UITableViewCell.AccessoryType.none
+        }
         return cell
     }
     
-    
-    @IBOutlet weak var tableView: UITableView!
-    //Todoを格納する配列
-    var todoList = [String]()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view.
-        let userDefaults = UserDefaults.standard
-        if let storedTodoList = userDefaults.array(forKey: "todoList") as? [String]{
-            todoList.append(contentsOf: storedTodoList)
+    //セルをタップした時の処理
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let myTodo = todoList[indexPath.row]
+        if myTodo.todoDone{
+            //完了済みの場合は未完了に変更
+            myTodo.todoDone = false
+        }else{
+            //未完了の場合は完了済みに変更
+            myTodo.todoDone = true
+        }
+    //セルの状態を変更
+        tableView.reloadRows(at:[indexPath],with:UITableView.RowAnimation.fade)
+        //データ保存。Data型にシリアライズする
+        do{
+            let data: Data = try NSKeyedArchiver.archivedData(withRootObject: todoList, requiringSecureCoding: true)
+            //UserDEfaultsに保存
+            let userDefaults = UserDefaults.standard
+            userDefaults.set(data,forKey: "todoList")
+            userDefaults.synchronize()
+        }catch{
+            //エラー処理なし
         }
     }
     
@@ -50,14 +88,22 @@ class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegat
             //OKボタンが押された時の処理
             if let textField = alertController.textFields?.first{
                 //Todoリストの配列に入力値を挿入
-                self.todoList.insert(textField.text!,at:0)
+                let myTodo = MyTodo()
+                myTodo.todoTitle = textField.text!
+                self.todoList.insert(myTodo,at:0)
                 //テーブルに行を追加されたことをテーブルに通知
                 self.tableView.insertRows(at:[IndexPath(row:0,section:0)],with:UITableView.RowAnimation.right)
                 
                 //todoの保存処理
                 let userDefaults = UserDefaults.standard
-                userDefaults.set(self.todoList,forKey: "todoList")
+                //Data型にシリアライズする
+                do{
+                    let data = try NSKeyedArchiver.archivedData(withRootObject: self.todoList, requiringSecureCoding: true)
+                userDefaults.set(data,forKey: "todoList")
                 userDefaults.synchronize()
+                }catch{
+                    //エラー処理なし
+                }
             }
         }
         //OKボタンがタップされたときの処理
