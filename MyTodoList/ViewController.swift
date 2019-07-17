@@ -20,8 +20,8 @@ class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegat
         let userDefaults = UserDefaults.standard
         if let storedTodoList = userDefaults.array(forKey: "todoList") as? Data{
             do{
-                if let unarchiveTodoList = try NSKeyedUnarchiver.unarchiveObject(ofClasses:[NSArray.self, MyTodo.self],from:storedTodoList) as? [MyTodo]{
-                    todoList.append(contentsOf: storedTodoList)
+                if let unarchiveTodoList = try NSKeyedUnarchiver.unarchivedObject(ofClasses:[NSArray.self, MyTodo.self],from:storedTodoList) as? [MyTodo]{
+                    todoList.append(contentsOf: unarchiveTodoList)
                 }
             }catch {
                 //エラー処理なし
@@ -83,7 +83,7 @@ class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegat
     //入力するテキストフィールドの作成
         alertController.addTextField(configurationHandler:nil)
     //OKボタンを作成
-        let okAction = UIAlertAction(title:"OK",style: UIAlertController.Style.default){
+        let okAction = UIAlertAction(title:"OK",style: UIAlertAction.Style.default){
             (action: UIAlertAction) in
             //OKボタンが押された時の処理
             if let textField = alertController.textFields?.first{
@@ -115,7 +115,29 @@ class ViewController: UIViewController, UITableViewDataSource,UITableViewDelegat
         //アラートダイアログを表示
         present(alertController,animated: true,completion:nil)
     }
+}
+
+class MyTodo:NSObject,NSSecureCoding{
+    static var supportsSecureCoding: Bool{
+        return true
+    }
     
-    
-    
+    //Todoのタイトル
+    var todoTitle: String?
+    //Todoを完了したかどうかを表すフラグ
+    var todoDone: Bool = false
+    //コンストラクタ
+    override init(){
+    }
+    //NSCordingプロトコルに宣言されているえデシリアライズ処理。デコーダ処理とも言われる
+    required init?(coder aDecoder: NSCoder) {
+        todoTitle = aDecoder.decodeBool(forKey: "todoTitle") as? String
+        todoDone = aDecoder.decodeBool(forKey: "todoDone")
+    }
+
+    //NSCordingプロトコルに宣言されているシリアライズ処理。エンコード処理とも呼ばれる
+    func encode(with aCoder: NSCoder) {
+        aCoder.encode(todoTitle, forKey: "todoTitle")
+        aCoder.encode(todoDone, forKey: "todoDone")
+    }
 }
